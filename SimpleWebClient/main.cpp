@@ -1,9 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <stdio.h>
-#include <Windows.h>
+#include <WinSock2.h>
 
 #include "HTMLParserBase.h"
+
+#pragma comment(lib, "ws2_32.lib")
 
 // URL structure:
 // http://host[:port][/path][?query][#fragment]
@@ -148,7 +151,39 @@ int ParseURL(char* url, char* host, unsigned int* port, char* request){
 	if (parseOptionalParts(index, port, request) != 0){
 		return 1;
 	}
-	printf(" host %s, port %d, request %s\n", host, port, request);
+	printf(" host %s, port %d, request %s\n", host, *port, request);
+	return 0;
+}
+
+int ExecuteDNS(char* host, SOCKET* s, unsigned int port, hostent* remote, sockaddr_in* server){
+	WSADATA wsa_data;
+	WORD w_version_requested = MAKEWORD(2, 2);
+	if (WSAStartup(w_version_requested, &wsa_data) != 0){
+		printf(" failed with %d\n", WSAGetLastError());
+		WSACleanup();
+		return 1;
+	}
+	*s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (*s == INVALID_SOCKET){
+		printf(" failed with %d\n", WSAGetLastError());
+		WSACleanup();
+		return 1;
+	}
+	DWORD IP = inet_addr(host);
+	if (IP == INADDR_NONE){
+		if ((remote = gethostbyname(host)) == NULL){
+			printf(" failed with %d\n", WSAGetLastError());
+			return 1;
+		}
+		else{
+			memcpy((char*)(&(server->sin_addr)), remote->h_addr, remote->h_length);
+		}
+	}
+	else{
+		server->sin_addr.S_un.S_addr = IP;
+	}
+	server->sin_family = AF_INET;
+	server->sin_port = htons(port);
 	return 0;
 }
 
@@ -169,6 +204,15 @@ int main(int arguement_count, char** arguement_values){
 		return 0;
 	}
 	// parse successful
+	printf("        Doing DNS...");
+	hostent remote;
+	sockaddr_in server;
+	SOCKET s;
+	if (ExecuteDNS(host, &s, port, &remote, &server) != 0){
+		system("PAUSE");
+		return 0;
+	}
+	// DNS execution successful
 	char filename[] = "tamu.html";
 	HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE){
