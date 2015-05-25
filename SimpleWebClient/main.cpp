@@ -40,6 +40,11 @@ int main(int arguement_count, char** arguement_values){
 		return 0;
 	}
 	// Read successful
+	if (sock.VerifyHeader(position) != 0){
+		system("PAUSE");
+		return 0;
+	}
+	// Header Verified
 	/*
 	char filename[] = "tamu.html";
 	HANDLE hFile = CreateFile(filename, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);

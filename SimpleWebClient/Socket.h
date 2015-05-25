@@ -12,12 +12,12 @@ private:
 	int current_position;
 	char* buffer;
 	int sendRequest(URL url){
-		char* send_buffer = new char[4 + strlen(url.returnRequest()) + 17 + strlen(url.returnHost()) + 24];
+		char* send_buffer = new char[4 + strlen(url.returnRequest()) + 42 + strlen(url.returnHost()) + 24];
 		strcpy(send_buffer, "GET ");
 		strncpy(send_buffer + 4, url.returnRequest(), strlen(url.returnRequest()));
-		strcpy(send_buffer + 4 + strlen(url.returnRequest()), " HTTP/1.0\r\nHost: ");
-		strncpy(send_buffer + 4 + strlen(url.returnRequest()) + 17, url.returnHost(), strlen(url.returnHost()));
-		strcpy(send_buffer + 4 + strlen(url.returnRequest()) + 17 + strlen(url.returnHost()), "\r\nConnection: close\r\n\r\n\0");
+		strcpy(send_buffer + 4 + strlen(url.returnRequest()), " HTTP/1.0\r\nUser-Agent: crawler/1.1\r\nHost: ");
+		strncpy(send_buffer + 4 + strlen(url.returnRequest()) + 42, url.returnHost(), strlen(url.returnHost()));
+		strcpy(send_buffer + 4 + strlen(url.returnRequest()) + 42 + strlen(url.returnHost()), "\r\nConnection: close\r\n\r\n\0");
 		if (send(current_socket, send_buffer, strlen(send_buffer), 0) == SOCKET_ERROR){
 			printf(" failed with %d\n", WSAGetLastError());
 			closesocket(current_socket);
@@ -136,6 +136,27 @@ public:
 			}
 		}
 		return 1;
+	}
+	int VerifyHeader(char* original_url){
+		int count = 0;
+		printf("        Verifying header... status code %d\n", atoi(buffer + 9));
+		char* length_location = strstr(buffer, "\r\nContent-Length: ");
+		int length = atoi(length_location + 18);
+		int header_length = strlen(buffer) - length;
+		char temp = buffer[header_length];
+		if (atoi(buffer + 9) < 300 && atoi(buffer + 9) > 199){
+			time = GetTickCount();
+			printf("      + Parsing page...");
+			HTMLParserBase HTML_parser_base = HTMLParserBase();
+			HTML_parser_base.Parse(buffer + header_length, length, original_url, strlen(original_url), &count);
+			time = GetTickCount() - time;
+			printf(" done in %d ms with %d links\n", time, count);
+		}
+		printf("\n----------------------------------------\n");
+		buffer[header_length] = '\0';
+		printf("%s\n", buffer);
+		buffer[header_length] = temp;
+		return 0;
 	}
 };
 
