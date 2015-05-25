@@ -23,5 +23,11 @@
     <ClInclude Include="HTMLParserBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Socket.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="URL.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
